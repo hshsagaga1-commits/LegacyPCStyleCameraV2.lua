@@ -1,6 +1,4 @@
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local CoreGui = game:GetService("CoreGui")
 
 local player = Players.LocalPlayer
 local env = getgenv and getgenv() or _G
@@ -82,17 +80,13 @@ local function findLegacyBaseCamera()
 end
 
 local function createCrosshair()
-    local parent = CoreGui
+    local playerGui = player:WaitForChild("PlayerGui")
 
-    pcall(function()
-        if gethui then
-            local hui = gethui()
+    local oldGui = playerGui:FindFirstChild("EvadeLegacyPCCrosshair")
 
-            if hui then
-                parent = hui
-            end
-        end
-    end)
+    if oldGui then
+        oldGui:Destroy()
+    end
 
     local gui = Instance.new("ScreenGui")
     gui.Name = "EvadeLegacyPCCrosshair"
@@ -100,15 +94,14 @@ local function createCrosshair()
     gui.ResetOnSpawn = false
     gui.DisplayOrder = 999999
     gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    gui.Parent = parent
+    gui.Parent = playerGui
 
     local shadow = Instance.new("Frame")
-    shadow.Name = "Shadow"
     shadow.AnchorPoint = Vector2.new(0.5, 0.5)
     shadow.Position = UDim2.fromScale(0.5, 0.5)
-    shadow.Size = UDim2.fromOffset(6, 6)
+    shadow.Size = UDim2.fromOffset(8, 8)
     shadow.BackgroundColor3 = Color3.new(0, 0, 0)
-    shadow.BackgroundTransparency = 0.48
+    shadow.BackgroundTransparency = 0.55
     shadow.BorderSizePixel = 0
     shadow.ZIndex = 1
     shadow.Parent = gui
@@ -118,10 +111,9 @@ local function createCrosshair()
     shadowCorner.Parent = shadow
 
     local dot = Instance.new("Frame")
-    dot.Name = "Dot"
     dot.AnchorPoint = Vector2.new(0.5, 0.5)
     dot.Position = UDim2.fromScale(0.5, 0.5)
-    dot.Size = UDim2.fromOffset(3, 3)
+    dot.Size = UDim2.fromOffset(4, 4)
     dot.BackgroundColor3 = Color3.new(1, 1, 1)
     dot.BorderSizePixel = 0
     dot.ZIndex = 2
@@ -276,19 +268,40 @@ local function attach()
         local horizontalAlpha = 1 - math.exp(-HORIZONTAL_FOLLOW * dt)
         local verticalAlpha = 1 - math.exp(-VERTICAL_FOLLOW * dt)
 
-        local nextHorizontal = Vector3.new(current.X, 0, current.Z):Lerp(
-            Vector3.new(realPosition.X, 0, realPosition.Z),
-            horizontalAlpha
-        )
+        local nextHorizontal =
+            Vector3.new(current.X, 0, current.Z):Lerp(
+                Vector3.new(realPosition.X, 0, realPosition.Z),
+                horizontalAlpha
+            )
 
-        local nextY = current.Y + (realPosition.Y - current.Y) * verticalAlpha
-        local nextFocus = Vector3.new(nextHorizontal.X, nextY, nextHorizontal.Z)
+        local nextY =
+            current.Y
+            + (realPosition.Y - current.Y) * verticalAlpha
+
+        local nextFocus =
+            Vector3.new(
+                nextHorizontal.X,
+                nextY,
+                nextHorizontal.Z
+            )
 
         local lag = nextFocus - realPosition
-        local horizontalLag = clampHorizontal(lag, maxHorizontal)
-        local verticalLag = math.clamp(lag.Y, -maxVertical, maxVertical)
 
-        nextFocus = realPosition + horizontalLag + Vector3.new(0, verticalLag, 0)
+        local horizontalLag =
+            clampHorizontal(lag, maxHorizontal)
+
+        local verticalLag =
+            math.clamp(
+                lag.Y,
+                -maxVertical,
+                maxVertical
+            )
+
+        nextFocus =
+            realPosition
+            + horizontalLag
+            + Vector3.new(0, verticalLag, 0)
+
         data.focus = nextFocus
 
         return nextFocus
@@ -297,15 +310,17 @@ local function attach()
     state.baseCamera = baseCamera
     state.originalGetSubjectPosition = original
     state.wrapper = wrapper
+
     baseCamera.GetSubjectPosition = wrapper
 
     return true
 end
 
-createCrosshair()
+pcall(createCrosshair)
 
 player.CharacterAdded:Connect(function()
-    state.controllers = setmetatable({}, {__mode = "k"})
+    state.controllers =
+        setmetatable({}, {__mode = "k"})
 end)
 
 task.spawn(function()
@@ -315,4 +330,4 @@ task.spawn(function()
     end
 end)
 
-attach()
+pcall(attach)
